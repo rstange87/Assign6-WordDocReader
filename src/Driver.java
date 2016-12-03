@@ -2,6 +2,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
 import java.util.Scanner;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 public class Driver {
@@ -51,19 +52,16 @@ public class Driver {
         readDocs(args[1]);
 
         //Prints current full word list.
-        System.out.println(fullWordList.toString() + "\n");
-        System.out.println(fullDocList.toString() + "\n");
+        //System.out.println(fullWordList.toString() + "\n");
+        //System.out.println(fullDocList.toString() + "\n");
 
         //Adds all words to the tree that are assigned to documents.
-        TreeSet<Word> myWordTree = new TreeSet<Word>();
+        TreeMap<String, Word> wordsWithDocsTree = new TreeMap<String, Word>();
         for (int i = 0; i< fullWordList.size(); i++) {
             if(fullWordList.get(i).getDocList().size() > 0) {
-                myWordTree.add(fullWordList.get(i));
+                wordsWithDocsTree.put(fullWordList.get(i).getWord(), fullWordList.get(i));
             }
         }
-
-        System.out.println(myWordTree.toString());
-        System.out.println();
 
         Scanner myScanner = new Scanner(System.in);
         String[] commandAndId = {"",""};
@@ -78,36 +76,58 @@ public class Driver {
 
             commandAndId = myScanner.nextLine().split(" ");
 
-            if (commandAndId.length < 2) {
+            if (commandAndId.length < 2 && !commandAndId[0].equals("quit")) {
                 System.out.println("Please correctly enter from the list of commands!");
             }
+
+            //Displays all of the words assigned to the sent document.
             else if (commandAndId[0].equals("wordlist")){
                 for (int i = 0; i<fullDocList.size(); i++) {
                     if (fullDocList.get(i).getId().equals(commandAndId[1])) {
+                        if (fullDocList.get(i).getWordList().size() == 0) {
+                            System.out.println("Document '" + commandAndId[1] + "' has no words.");
+                        }
                         fullDocList.get(i).displayWordList();
                         i = fullDocList.size();
+                    } else if (i == fullDocList.size() - 1) {
+                        System.out.println("Document '" + commandAndId[1] + "' does not exist.");
                     }
                 }
             }
+
+            //Displays all documents assigned to sent word.
             else if (commandAndId[0].equals("doclist")) {
-                for (int i = 0; i<fullWordList.size(); i++) {
-                    if (fullWordList.get(i).getWord().equals(commandAndId[1])) {
-                        fullWordList.get(i).displayDocList();
-                        i = fullWordList.size();
-                    }
+                if (wordsWithDocsTree.get(commandAndId[1]) != null) {
+                    wordsWithDocsTree.get(commandAndId[1]).displayDocList();
+                } else {
+                    System.out.print("That word has no documents assigned.");
                 }
 
             }
+
+            //Displays all words that occur with sent word.
             else if (commandAndId[0].equals("occurswith")) {
-                List<Document> tempDocList;
-                for (int i = 0; i<fullWordList.size(); i++) {
-                    if (fullWordList.get(i).getWord().equals(commandAndId[1])) {
-                        tempDocList = fullWordList.get(i).getDocList();
-                        for (int j=0; j<tempDocList.size(); j++) {
-                            tempDocList.get(j).displayWordList();
+                if (wordsWithDocsTree.get(commandAndId[1]) != null) {
+
+                    //Used TreeSet to create a list of words occurring with words to prevent duplicates.
+                    TreeSet<Word> wordOccurrenceTree = new TreeSet<Word>();
+
+                    //Using tempDocList pointer to make for loop easier to read.
+                    List<Document> tempDocList = wordsWithDocsTree.get(commandAndId[1]).getDocList();
+
+                    for (int docIndex=0; docIndex<tempDocList.size(); docIndex++) {
+                        int numWords = tempDocList.get(docIndex).getWordList().size();
+                        for (int wordIndex=0; wordIndex<numWords; wordIndex++) {
+                            wordOccurrenceTree.add(tempDocList.get(docIndex).getWordList().get(wordIndex));
                         }
-                        i = fullWordList.size();
                     }
+
+                    while (wordOccurrenceTree.size() > 0) {
+                        System.out.println(wordOccurrenceTree.pollFirst());
+                    }
+
+                } else {
+                    System.out.print("That word has no documents assigned.");
                 }
             }
             else if (!commandAndId[0].equals("quit")){
